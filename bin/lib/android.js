@@ -4,15 +4,14 @@ var mappings = require("./mappings"),
 module.exports = function (context) {
 
 	var
-		req = context ? context.requireCordovaModule : require,
-		Q = req('q'),
-		path = req('path'),
-		ET = req('elementtree'),
-		cordova = req('cordova'),
+		Q = require('q'),
+		path = require('path'),
+		ET = require('elementtree'),
+		cordova = require('cordova'),
 		cordova_lib = cordova.cordova_lib,
 		ConfigParser = cordova_lib.configparser,
-		cordova_util = req('cordova-lib/src/cordova/util'),
-		fs = require("./filesystem")(Q, req('fs'), path),
+		cordova_util = require('cordova-lib/src/cordova/util'),
+		fs = require("./filesystem")(Q, require('fs'), path),
 		platforms = {};
 
 	// fs, path, ET, cordova_util, ConfigParser
@@ -24,20 +23,20 @@ module.exports = function (context) {
 		};
 
 		if (!config.type) {
-			throw "no type defined for "+JSON.stringify (config, null, "\t");
+			throw "no type defined for " + JSON.stringify(config, null, "\t");
 		}
 
 		var mapping = mappings[config.type];
 
 		if (!mapping)
-			throw "no mapping for "+ config.type;
+			throw "no mapping for " + config.type;
 
 		element.tagname = mapping[platformName];
 
 		if (mapping.required) {
-			mapping.required.forEach (function (k) {
+			mapping.required.forEach(function (k) {
 				if (!(k in config)) {
-					throw ['attribute', k, 'not found for', config.title, '(' + config.type + ')'].join (" ");
+					throw ['attribute', k, 'not found for', config.title, '(' + config.type + ')'].join(" ");
 				}
 			});
 		}
@@ -49,7 +48,7 @@ module.exports = function (context) {
 				var attrConfig = mapping.attrs[attrName];
 				var elementKey = attrConfig[platformName];
 
-				var targetCheck = elementKey.split ('@');
+				var targetCheck = elementKey.split('@');
 				var targetAttr;
 				if (targetCheck.length === 2 && targetCheck[0] === '') {
 					targetAttr = targetCheck[1];
@@ -59,15 +58,15 @@ module.exports = function (context) {
 				}
 				if (attrConfig.value) {
 					if (!attrConfig.value[config[attrName]] || !attrConfig.value[config[attrName]][platformName])
-						throw "no mapping for type: "+ config.type + ", attr: " + attrName + ", value: " + config[attrName];
+						throw "no mapping for type: " + config.type + ", attr: " + attrName + ", value: " + config[attrName];
 					if (targetAttr)
-						element.attrs[targetAttr].push (attrConfig.value[config[attrName]][platformName]);
+						element.attrs[targetAttr].push(attrConfig.value[config[attrName]][platformName]);
 					else
 						element[elementKey] = attrConfig.value[config[attrName]][platformName]
 				} else {
 
 					if (targetAttr)
-						element.attrs[targetAttr].push (config[attrName]);
+						element.attrs[targetAttr].push(config[attrName]);
 					else
 						element[elementKey] = config[attrName];
 				}
@@ -75,7 +74,7 @@ module.exports = function (context) {
 		}
 
 		if (mapping.fixup && mapping.fixup[platformName]) {
-			mapping.fixup[platformName] (element, config, mapping);
+			mapping.fixup[platformName](element, config, mapping);
 		}
 
 		return element;
@@ -85,19 +84,19 @@ module.exports = function (context) {
 
 		for (var attr in config.attrs) {
 			if (config.attrs[attr] && config.attrs[attr].constructor === Array)
-				config.attrs[attr] = config.attrs[attr].join ('|');
+				config.attrs[attr] = config.attrs[attr].join('|');
 		}
 
 		var newNode = new ET.SubElement(parent, config.tagname);
 		newNode.attrib = config.attrs;
 
 		if (config.strings) {
-			console.log("will push strings array "+JSON.stringify(config.strings));
+			console.log("will push strings array " + JSON.stringify(config.strings));
 			stringsArrays.push(config.strings);
 		}
 
 		if (config.children) {
-			config.children.forEach(function(child){
+			config.children.forEach(function (child) {
 				buildNode(newNode, child, stringsArrays);
 			});
 		}
@@ -117,7 +116,7 @@ module.exports = function (context) {
 			var node = mapConfig(preference);
 
 			if (preference.type === 'group' && preference.items && preference.items.length) {
-				preference.items.forEach(function(childNode) {
+				preference.items.forEach(function (childNode) {
 					node.children.push(mapConfig(childNode));
 				});
 			}
@@ -133,7 +132,7 @@ module.exports = function (context) {
 			titlesXml.set("name", "apppreferences_" + stringsArray.name);
 			valuesXml.set("name", "apppreferences_" + stringsArray.name + 'Values');
 
-			for (var i=0, l=stringsArray.titles.length; i<l; i++) {
+			for (var i = 0, l = stringsArray.titles.length; i < l; i++) {
 				var titleItemXml = new ET.SubElement(titlesXml, "item"),
 					valueItemXml = new ET.SubElement(valuesXml, "item");
 
@@ -154,14 +153,17 @@ module.exports = function (context) {
 			preferencesStringDocument = settingsDocuments.preferencesStringDocument;
 
 
+		var resXmlDir = path.join('platforms', 'android', 'app', 'src', 'main', 'res', 'xml');
+		var resValuesDir = path.join('platforms', 'android', 'app', 'src', 'main', 'res', 'values');
+
 		return fs.exists('platforms/android')
-			// Write preferences xml file
-			.then(function () { return fs.mkdir('platforms/android/res/xml'); })
-			.then(function () { return fs.writeFile('platforms/android/res/xml/apppreferences.xml', preferencesDocument.write()); })
+			// Write preferences xml file (cordova-android 7+ uses app/src/main/res)
+			.then(function () { return fs.mkdir(resXmlDir); })
+			.then(function () { return fs.writeFile(path.join(resXmlDir, 'apppreferences.xml'), preferencesDocument.write()); })
 
 			// Write localization resource file
-			.then(function () { return fs.mkdir('platforms/android/res/values'); })
-			.then(function (prefs) { return fs.writeFile('platforms/android/res/values/apppreferences.xml', preferencesStringDocument.write()); })
+			.then(function () { return fs.mkdir(resValuesDir); })
+			.then(function (prefs) { return fs.writeFile(path.join(resValuesDir, 'apppreferences.xml'), preferencesStringDocument.write()); })
 
 			.then(function () { console.log('android preferences file was successfully generated'); })
 			.catch(function (err) {
@@ -174,7 +176,7 @@ module.exports = function (context) {
 			});
 	}
 
-	function afterPluginInstall () {
+	function afterPluginInstall() {
 		return fs.exists('platforms/android')
 			// Import preferences into native android project
 			.then(function () { return fs.readFile(path.resolve(__dirname, '../../src/android/AppPreferencesActivity.template')); })
@@ -188,12 +190,12 @@ module.exports = function (context) {
 				return (
 					//'package me.apla.cordova;\n\n' +
 					//'import ' + packageName + '.R;\n\n' +
-					tmpl.toString ('utf8').replace (/ANDROID_PACKAGE_NAME/g, packageName)
+					tmpl.toString('utf8').replace(/ANDROID_PACKAGE_NAME/g, packageName)
 				);
 			})
 			.then(function (data) {
-				var androidPackagePath = "me.apla.cordova".replace (/\./g, '/');
-				var activityFileName= path.join ('platforms/android/src', androidPackagePath, 'AppPreferencesActivity.java');
+				var androidPackagePath = "me.apla.cordova".replace(/\./g, '/');
+				var activityFileName = path.join('platforms', 'android', 'app', 'src', 'main', 'java', androidPackagePath, 'AppPreferencesActivity.java');
 
 				return fs.writeFile(activityFileName, data);
 			})
@@ -211,15 +213,17 @@ module.exports = function (context) {
 
 	function clean(config) {
 
-		var androidPackagePath = "me.apla.cordova".replace (/\./g, '/');
-		var activityFileName = path.join ('platforms/android/src', androidPackagePath, 'AppPreferencesActivity.java');
+		var androidPackagePath = "me.apla.cordova".replace(/\./g, '/');
+		var activityFileName = path.join('platforms', 'android', 'app', 'src', 'main', 'java', androidPackagePath, 'AppPreferencesActivity.java');
+		var resXmlFile = path.join('platforms', 'android', 'app', 'src', 'main', 'res', 'xml', 'apppreferences.xml');
+		var resValuesFile = path.join('platforms', 'android', 'app', 'src', 'main', 'res', 'values', 'apppreferences.xml');
 
 		return fs.exists('platforms/android')
 			// Remove preferences xml file
-			.then(function () { return fs.unlink('platforms/android/res/xml/apppreferences.xml'); })
+			.then(function () { return fs.unlink(resXmlFile); })
 
 			// Remove localization resource file
-			.then(function (prefs) { return fs.unlink('platforms/android/res/values/apppreferences.xml'); })
+			.then(function (prefs) { return fs.unlink(resValuesFile); })
 
 			// Remove preferences from native android project
 			.then(function (data) {
