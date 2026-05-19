@@ -61,7 +61,7 @@ AppPreferencesW8.prototype.nativeFetch = function(successCallback, errorCallback
 		return successCallback(null);
 	}
 
-	if (!args.key) {
+	if (args.key === "GET_ALL_DATA") {
 		var allValues = {};
 		var iter = container.values.first();
 		while (iter.hasCurrent) {

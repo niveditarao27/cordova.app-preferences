@@ -91,7 +91,7 @@ namespace WPCordovaClassLib.Cordova.Commands
                 preference = JSON.JsonHelper.Deserialize<AppPreferenceArgs>(optionsString);
                 IsolatedStorageSettings userSettings = IsolatedStorageSettings.ApplicationSettings;
 
-                if (string.IsNullOrEmpty(preference.key) || preference.key == "null")
+                if (preference.key == "GET_ALL_DATA")
                 {
                     string json = "{";
                     int count = 0;

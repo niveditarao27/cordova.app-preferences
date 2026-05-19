@@ -8,7 +8,7 @@ AppPreferencesLocalStorage.prototype.fetch = function(successCallback, errorCall
 
 	var args = this.prepareKey ('get', dict, key);
 
-	if (!args.key) {
+	if (args.key === "GET_ALL_DATA") {
 		var allValues = {};
 		var prefix = args.dict ? args.dict + '.' : '';
 		for (var i = 0; i < window.localStorage.length; i++) {

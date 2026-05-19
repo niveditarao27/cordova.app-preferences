@@ -6,7 +6,7 @@ AppPreferencesLocalStorage.prototype.nativeFetch = function(successCallback, err
 
 	var self = this;
 
-	if (!args.key) {
+	if (args.key === "GET_ALL_DATA") {
 		var allValues = {};
 		var prefix = args.dict ? args.dict + '.' : '';
 		for (var i = 0; i < window.localStorage.length; i++) {

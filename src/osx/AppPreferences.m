@@ -107,7 +107,7 @@
 		}
 
 		if (target != nil) {
-			if (settingsName == nil || [settingsName isKindOfClass:[NSNull class]] || ([settingsName isKindOfClass:[NSString class]] && [settingsName length] == 0)) {
+			if (settingsName != nil && [settingsName isKindOfClass:[NSString class]] && [settingsName isEqualToString:@"GET_ALL_DATA"]) {
 				if ([target respondsToSelector:@selector(dictionaryRepresentation)]) {
 					settingsValue = [target dictionaryRepresentation];
 				} else {

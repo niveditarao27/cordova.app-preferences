@@ -201,7 +201,7 @@ public class AppPreferences extends CordovaPlugin implements OnSharedPreferenceC
 		cordova.getThreadPool().execute(new Runnable() {public void run() {
 
 			String returnVal = null;
-			if (key == null || key.equals("") || key.equals("null")) {
+			if (key != null && key.equals("GET_ALL_DATA")) {
 				try {
 					JSONObject jsonDict = new JSONObject();
 					java.util.Map<String, ?> allEntries = sharedPrefs.getAll();
