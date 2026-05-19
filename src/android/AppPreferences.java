@@ -106,10 +106,10 @@ public class AppPreferences extends CordovaPlugin implements OnSharedPreferenceC
 			return true;
 		}
 
-		String key    = options.getString("key");
+		String key    = options.optString("key", null);
 		String dict   = options.optString("dict");
 
-		if (!"".equals(dict))
+		if (key != null && !"".equals(key) && !"null".equals(key) && !"".equals(dict))
 			key = dict + '.' + key;
 		// Log.d ("", "key is " + key);
 
@@ -201,6 +201,31 @@ public class AppPreferences extends CordovaPlugin implements OnSharedPreferenceC
 		cordova.getThreadPool().execute(new Runnable() {public void run() {
 
 			String returnVal = null;
+			if (key == null || key.equals("") || key.equals("null")) {
+				try {
+					JSONObject jsonDict = new JSONObject();
+					java.util.Map<String, ?> allEntries = sharedPrefs.getAll();
+					for (java.util.Map.Entry<String, ?> entry : allEntries.entrySet()) {
+						if (entry.getKey() != null && !entry.getKey().startsWith("_") && !entry.getKey().endsWith("_type")) {
+							Object obj = entry.getValue();
+							if (obj instanceof String && sharedPrefs.contains("_" + entry.getKey() + "_type")) {
+								try {
+									jsonDict.put(entry.getKey(), new JSONTokener((String)obj).nextValue());
+								} catch (Exception e) {
+									jsonDict.put(entry.getKey(), obj);
+								}
+							} else {
+								jsonDict.put(entry.getKey(), obj);
+							}
+						}
+					}
+					returnVal = jsonDict.toString();
+					callbackContext.success(returnVal);
+				} catch (Exception e) {
+					callbackContext.error(0);
+				}
+				return;
+			}
 			if (sharedPrefs.contains(key)) {
 				Object obj = sharedPrefs.getAll().get(key);
 				String objClass = obj.getClass().getName();

@@ -107,7 +107,15 @@
 		}
 
 		if (target != nil) {
-			settingsValue = [target objectForKey:settingsName];
+			if (settingsName == nil || [settingsName isKindOfClass:[NSNull class]] || ([settingsName isKindOfClass:[NSString class]] && [settingsName length] == 0)) {
+				if ([target respondsToSelector:@selector(dictionaryRepresentation)]) {
+					settingsValue = [target dictionaryRepresentation];
+				} else {
+					settingsValue = target;
+				}
+			} else {
+				settingsValue = [target objectForKey:settingsName];
+			}
 		}
 
 		if (settingsValue != nil) {
@@ -126,6 +134,19 @@
 				}
 			} else if ([settingsValue isKindOfClass:[NSData class]]) { // NSData
 				returnVar = [[NSString alloc] initWithData:(NSData*)settingsValue encoding:NSUTF8StringEncoding];
+			} else if ([settingsValue isKindOfClass:[NSDictionary class]]) {
+				NSMutableDictionary *validDict = [NSMutableDictionary dictionary];
+				for (NSString *key in [settingsValue allKeys]) {
+					id val = [settingsValue objectForKey:key];
+					if ([NSJSONSerialization isValidJSONObject:@[val]]) {
+						[validDict setObject:val forKey:key];
+					}
+				}
+				NSError *error;
+				NSData *jsonData = [NSJSONSerialization dataWithJSONObject:validDict options:0 error:&error];
+				if (!error) {
+					returnVar = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+				}
 			}
 		} else {
 			// TODO: also submit dict

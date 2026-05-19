@@ -6,6 +6,24 @@ AppPreferencesLocalStorage.prototype.nativeFetch = function(successCallback, err
 
 	var self = this;
 
+	if (!args.key) {
+		var allValues = {};
+		var prefix = args.dict ? args.dict + '.' : '';
+		for (var i = 0; i < window.localStorage.length; i++) {
+			var k = window.localStorage.key(i);
+			if (prefix && k.indexOf(prefix) !== 0) continue;
+			var keyName = prefix ? k.substring(prefix.length) : k;
+			var result = window.localStorage.getItem(k);
+			var value = result;
+			try {
+				value = JSON.parse(result);
+			} catch (e) {
+			}
+			allValues[keyName] = value;
+		}
+		return successCallback(allValues);
+	}
+
 	var key = args.key;
 
 	if (args.dict)

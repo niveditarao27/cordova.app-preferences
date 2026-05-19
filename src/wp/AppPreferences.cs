@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.IO.IsolatedStorage;
 using System.Runtime.Serialization;
@@ -30,7 +30,7 @@ namespace WPCordovaClassLib.Cordova.Commands
         [DataContract]
         public class AppPreferenceArgs
         {
-            [DataMember(Name = "key", IsRequired = true)]
+            [DataMember(Name = "key", IsRequired = false)]
             public string key;
             [DataMember(Name = "dict", IsRequired = false)]
             public string dict;
@@ -64,7 +64,7 @@ namespace WPCordovaClassLib.Cordova.Commands
 
             public string fullKey()
             {
-                if (this.dict != null)
+                if (this.dict != null && !string.IsNullOrEmpty(this.key))
                 {
                     return this.dict + '.' + this.key;
                 }
@@ -91,16 +91,33 @@ namespace WPCordovaClassLib.Cordova.Commands
                 preference = JSON.JsonHelper.Deserialize<AppPreferenceArgs>(optionsString);
                 IsolatedStorageSettings userSettings = IsolatedStorageSettings.ApplicationSettings;
 
-                userSettings.TryGetValue<object>(preference.fullKey(), out value);
-                // System.Diagnostics.Debug.WriteLine("\ntype is: " + value.GetType() + "\n");
-                if (value is JSONString)
+                if (string.IsNullOrEmpty(preference.key) || preference.key == "null")
                 {
-                    returnVal = ((JSONString)value).contents;
+                    string json = "{";
+                    int count = 0;
+                    foreach (var pair in userSettings)
+                    {
+                        if (count > 0) json += ",";
+                        string valStr = pair.Value is JSONString ? ((JSONString)pair.Value).contents : JSON.JsonHelper.Serialize(pair.Value);
+                        json += "\"" + pair.Key + "\":" + valStr;
+                        count++;
+                    }
+                    json += "}";
+                    returnVal = json;
                 }
                 else
                 {
-                    returnVal = JSON.JsonHelper.Serialize(value);
+                    userSettings.TryGetValue<object>(preference.fullKey(), out value);
+                    // System.Diagnostics.Debug.WriteLine("\ntype is: " + value.GetType() + "\n");
+                    if (value is JSONString)
+                    {
+                        returnVal = ((JSONString)value).contents;
+                    }
+                    else
+                    {
+                        returnVal = JSON.JsonHelper.Serialize(value);
 
+                    }
                 }
                 // System.Diagnostics.Debug.WriteLine("\nserialized value for " + value.GetType() + " is: " + returnVal + "\n");
 

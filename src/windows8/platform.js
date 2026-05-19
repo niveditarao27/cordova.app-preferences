@@ -61,6 +61,25 @@ AppPreferencesW8.prototype.nativeFetch = function(successCallback, errorCallback
 		return successCallback(null);
 	}
 
+	if (!args.key) {
+		var allValues = {};
+		var iter = container.values.first();
+		while (iter.hasCurrent) {
+			var result = iter.current.value;
+			var value = null;
+			if (result) {
+				try {
+					value = JSON.parse(result);
+				} catch(e) {
+					value = result;
+				}
+			}
+			allValues[iter.current.key] = value;
+			iter.moveNext();
+		}
+		return successCallback(allValues);
+	}
+
 	var result = null;
 
 	if (container.values.hasKey(args.key)) {
