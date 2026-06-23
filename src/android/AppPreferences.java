@@ -17,6 +17,8 @@ import android.content.SharedPreferences.Editor;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.preference.PreferenceManager;
 import android.util.Log;
+import android.content.RestrictionsManager;
+import android.os.Bundle;
 
 public class AppPreferences extends CordovaPlugin implements OnSharedPreferenceChangeListener {
 
@@ -200,10 +202,20 @@ public class AppPreferences extends CordovaPlugin implements OnSharedPreferenceC
 	private boolean fetchValueByKey(final SharedPreferences sharedPrefs, final String key, final CallbackContext callbackContext) {
 		cordova.getThreadPool().execute(new Runnable() {public void run() {
 
+			// Retrieve MDM Managed Configurations (Restrictions)
+			Context context = cordova.getActivity().getApplicationContext();
+			RestrictionsManager restrictionsManager = (RestrictionsManager) context.getSystemService(Context.RESTRICTIONS_SERVICE);
+			Bundle appRestrictions = null;
+			if (restrictionsManager != null) {
+				appRestrictions = restrictionsManager.getApplicationRestrictions();
+			}
+
 			String returnVal = null;
 			if (key != null && key.equals("GET_ALL_DATA")) {
 				try {
 					JSONObject jsonDict = new JSONObject();
+					
+					// 1. Get standard shared preferences
 					java.util.Map<String, ?> allEntries = sharedPrefs.getAll();
 					for (java.util.Map.Entry<String, ?> entry : allEntries.entrySet()) {
 						if (entry.getKey() != null && !entry.getKey().startsWith("_") && !entry.getKey().endsWith("_type")) {
@@ -219,6 +231,14 @@ public class AppPreferences extends CordovaPlugin implements OnSharedPreferenceC
 							}
 						}
 					}
+
+					// 2. Merge MDM Managed Configurations
+					if (appRestrictions != null) {
+						for (String restrictionKey : appRestrictions.keySet()) {
+							jsonDict.put(restrictionKey, appRestrictions.get(restrictionKey));
+						}
+					}
+
 					returnVal = jsonDict.toString();
 					callbackContext.success(returnVal);
 				} catch (Exception e) {
@@ -257,6 +277,13 @@ public class AppPreferences extends CordovaPlugin implements OnSharedPreferenceC
 					Log.d("", "unhandled type: " + objClass);
 				}
 				// JSONObject jsonValue = new JSONObject((Map) obj);
+				callbackContext.success(returnVal);
+			} else if (appRestrictions != null && appRestrictions.containsKey(key)) {
+				// Fallback to Managed Configuration if key is not in SharedPreferences
+				Object obj = appRestrictions.get(key);
+				if (obj != null) {
+					returnVal = obj.toString();
+				}
 				callbackContext.success(returnVal);
 			} else {
 				// Log.d("", "no value");
